@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/redux/4.2.0/redux.js" integrity="sha512-8clKd0Zb9EeWqWE0gzlNxwWIjzYlYZ9cAsGcGM7gPsE+SKUxY6zZmLhrWqHMYQqbNCSwy21bn/TtA4zTQ+edag==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <body>
+        <div id="subject"></div>
+        <div id="toc"></div>
+        <div id="control"></div>
+        <div id="content"></div>
+        <script>
+            function reducer(state,action){
+                if(state===undefined){
+                    return {
+                        max_id:2,
+                        mode:'read',
+                        selected_id:1,
+                        contents:
+                        [
+                        {id:1,title:'HTML',description:'HTML is ...'},
+                        {id:2,title:'CSS',description:'CSS is ...'}
+                        ]
+                    };
+                }
+                let copy;
+                if(action.type==='SELECT'){
+                    copy=Object.assign({},state);
+                    copy.selected_id=action.id;
+                    copy.mode='read';
+                }else if(action.type==='CREATE'){
+                    let newContents=state.contents.concat();
+                    let newMaxId=state.max_id+1;
+                    newContents.push({id:newMaxId,title:action.title,description:action.description});
+                    copy=Object.assign({},state);
+                    copy.contents=[...newContents];
+                    copy.max_id=newMaxId;
+                    copy.mode='read';
+                    copy.selected_id=newMaxId;
+                }else if(action.type==="SWITCH"){
+                    copy=Object.assign({},state);
+                    copy.mode=action.mode;
+                }else if(action.type==='DELETE'){
+                    let newContents=[];
+                    let i=0;
+                    while(i<state.contents.length){
+                        if(state.selected_id!==state.contents[i].id){
+                            newContents.push(state.contents[i]);
+                        }
+                        i++;
+                    }
+                    copy=Object.assign({},state);
+                    copy.max_id--;
+                    copy.contents=[...newContents];
+                    copy.mode='welcome';
+
+                }else if(action.type='UPDATE'){
+                    copy=Object.assign({},state);
+                    let i=0;
+                    while(i<state.contents.length){
+                        if(state.selected_id===state.contents[i].id){
+                            copy.contents[i].title=action.title;
+                            copy.contents[i].description=action.description;
+                            break;
+                        }
+                        i++;
+                    }
+                    copy.mode='read';
+                }
+                console.log(state,copy);
+                return copy;
+            }
+            let store=Redux.createStore(reducer,window.__REDUX_DEVTOOLS_EXTENSION__ && window.__REDUX_DEVTOOLS_EXTENSION__());
+
+
+            function subject(){
+                document.querySelector('#subject').innerHTML=`        
+                    <header>
+                        <h1>WEB</h1>
+                        Hello, WEB!
+                    </header>`;
+            }
+            function toc(){
+                let state=store.getState();
+                console.log(state);
+                let i=0;
+                let liTags='';
+                while(i<state.contents.length){
+                    liTags +=
+                    `
+                    <li>
+                        <a onclick="
+                            event.preventDefault();
+                            let action={type:'SELECT', mode:'read',id:${state.contents[i].id}};
+                            store.dispatch(action);
+                        "
+                        href="${state.contents[i].id}">${state.contents[i].title}</a>
+                    </li>
+                    `;
+                    i++;
+                }
+                document.querySelector('#toc').innerHTML=`
+                <nav>
+                    <ol>
+                        ${liTags}
+                    </ol>
+                </nav>`;
+            }
+            function control(){
+                let state=store.getState();
+                document.querySelector("#control").innerHTML=`
+                <ul>
+                    <li><a href="/create" onclick="
+                        event.preventDefault();
+                        store.dispatch({
+                            type:'SWITCH',
+                            mode:'create'
+                        });
+                        ">create</a></li>
+                    <li><input type="button" value="delete" onclick="
+                        store.dispatch({
+                            type:'DELETE'
+                        });
+                        "></li>
+                </ul>
+                `;
+            }
+            function content(){
+                let state=store.getState();
+                if(state.mode==='create'){
+                    document.querySelector('#content').innerHTML=`
+                    <article>
+                        <form onsubmit="
+                            event.preventDefault();
+                            let title_val=this.title.value;
+                            let description_val=this.description.value;
+                            store.dispatch({
+                                type:'CREATE',
+                                title:title_val,
+                                description:description_val
+                            });
+                        ">
+                            <p>
+                                <input type="text" name="title" placeholder="title">
+                            </p>
+                                <textarea name="description" placeholder="description"></textarea>
+                            <p>
+                                <input type="submit">
+                            </p>
+                        </form>
+                    </article>
+                    `;
+                }else if(state.mode==='read'){
+                    let i=0;
+                    let title_val,description_val;
+                    while(i<state.contents.length){
+                        if(state.contents[i].id===state.selected_id){
+                            title_val=state.contents[i].title;
+                            description_val=state.contents[i].description;
+                            break;
+                        }
+                        i++;
+                    }
+                    document.querySelector('#content').innerHTML=`
+                    <article>
+                        <h2>${title_val}</h2>
+                        ${description_val}<br>
+                        <a href="/update" onclick="
+                        event.preventDefault();
+                        store.dispatch({
+                            type:'SWITCH',
+                            mode:'update'
+                        });
+                        ">update</a>
+                    </article>`;
+
+                }else if(state.mode==='welcome'){
+                    document.querySelector('#content').innerHTML=`
+                    <article>
+                        <h2>Welcome</h2>
+                        Hello, Redux!
+                    </article>
+                    `;
+                }else if(state.mode==='update'){
+                    document.querySelector('#content').innerHTML=`
+                    <article>
+                        <form onsubmit="
+                            event.preventDefault();
+                            let title_val=this.title.value;
+                            let description_val=this.description.value;
+                            store.dispatch({
+                                type:'UPDATE',
+                                title:title_val,
+                                description:description_val
+                            });
+                        ">
+                            <p>
+                                <input type="text" name="title" placeholder="title" value="${state.contents[state.selected_id-1].title}">
+                            </p>
+                                <textarea name="description" placeholder="description">${state.contents[state.selected_id-1].description}</textarea>
+                            <p>
+                                <input type="submit">
+                            </p>
+                        </form>
+                    </article>
+                    `;
+
+                }
+            }
+            store.subscribe(content);
+            store.subscribe(toc);
+            subject();
+            toc();
+            control();
+            content();
+        </script>
+    </body>
+</html>

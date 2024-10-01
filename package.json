@@ -1,0 +1,20 @@
+{
+    "name": "name",
+    "description": "description",
+    "authors": "author",
+    "version": "1.0.0",
+    "main": "pathToMain",
+    "type": "module",
+    "dependencies": {
+        "react-redux": "^8.0.5"
+    },
+    "devDependencies": {
+        "webpack": "^5.90.1",
+        "webpack-cli": "^5.1.4"
+    },
+    "scripts": {
+        "build": "webpack"
+
+    }
+
+}
